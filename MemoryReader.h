@@ -16,11 +16,13 @@ private:
     std::vector<MEMORY_BASIC_INFORMATION> memoryChunks;
 
     static SIZE_T findSubarray(byte super[], byte sub[], SIZE_T superSize, SIZE_T subSize);
+    int processStillAlive();
 
 public:
     explicit MemoryReader(const std::string& programName);
     LPCVOID findString(const std::string& string);
-    void readMemory(LPCVOID address, byte buffer[], SIZE_T bytesToRead);
+    int readMemory(LPCVOID address, byte buffer[], SIZE_T bytesToRead);
+    int writeMemory(LPVOID address, byte *buffer, SIZE_T bytesToWrite);
 };
 
 

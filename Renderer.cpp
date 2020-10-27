@@ -21,8 +21,8 @@ Renderer::Renderer(GameState* gameState) {
     SDL_RenderSetLogicalSize(renderer, TILE_SIZE_X * GRID_SIZE_X, TILE_SIZE_Y * GRID_SIZE_Y);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
-    tileSheetSolid = IMG_LoadTexture(renderer, R"(C:\Users\SIMMOBILE5\CLionProjects\CCMemoryReader\resources\ms_tiles.png)");
-    tileSheetTransparent = IMG_LoadTexture(renderer, R"(C:\Users\SIMMOBILE5\CLionProjects\CCMemoryReader\resources\ms_overlay.png)");
+    tileSheetSolid = IMG_LoadTexture(renderer, "resources/ms_tiles.png");
+    tileSheetTransparent = IMG_LoadTexture(renderer, "resources/ms_overlay.png");
 }
 
 void Renderer::render() {
@@ -54,6 +54,8 @@ void Renderer::render() {
 }
 
 SDL_Rect Renderer::getTileSheetCoord(int index) {
+    if (index > 0x6F) //The last tile in the sheet
+        return {0, 0, TILE_SIZE_X, TILE_SIZE_Y};
     int x = (index / 16) * TILE_SIZE_X;
     int y = (index % 16) * TILE_SIZE_Y;
     return {x, y, TILE_SIZE_X, TILE_SIZE_Y};

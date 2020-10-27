@@ -14,8 +14,7 @@ MemoryReader::MemoryReader(const std::string& programName) {
 
     bool found = false;
     while (!found) {
-        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,
-                                                   NULL); //grab a system snapshot of all current processes
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); //grab a system snapshot of all current processes
 
         if (Process32First(snapshot, &entry) == TRUE) { //grab the first process in snapshot
             while (Process32Next(snapshot, &entry) == TRUE) { //keep grabbing processes through the list
@@ -27,7 +26,7 @@ MemoryReader::MemoryReader(const std::string& programName) {
                 }
             }
             if (!found) {
-                printf("otvdwm.exe not found, trying again in 2 seconds\n");
+                printf("%s not found, trying again in 2 seconds\n", programName.c_str());
                 SDL_Delay(2000); //delay if nothing found
             }
         }
@@ -35,7 +34,7 @@ MemoryReader::MemoryReader(const std::string& programName) {
     }
 
     LPCVOID lpAddress = 0x0; //https://stackoverflow.com/a/13881951 using this method
-    MEMORY_BASIC_INFORMATION* basicInformation = new MEMORY_BASIC_INFORMATION;
+    auto* basicInformation = new MEMORY_BASIC_INFORMATION;
     while (VirtualQueryEx(processHandle, lpAddress, basicInformation, sizeof(MEMORY_BASIC_INFORMATION)) > 0) {
         if (basicInformation->Protect == PAGE_EXECUTE_READWRITE || basicInformation->Protect == PAGE_READWRITE) //give all sections that can read from, written to, or executed from
             memoryChunks.push_back(*basicInformation);
@@ -60,8 +59,22 @@ LPCVOID MemoryReader::findString(const std::string& string) {
     return nullptr;
 }
 
-void MemoryReader::readMemory(LPCVOID address, byte *buffer, SIZE_T bytesToRead) {
+int MemoryReader::readMemory(LPCVOID address, byte *buffer, SIZE_T bytesToRead) {
+    if (!processStillAlive()) {
+        return -1;
+    }
+
     ReadProcessMemory(processHandle, address, buffer, bytesToRead, NULL);
+    return 0;
+}
+
+int MemoryReader::writeMemory(LPVOID address, byte *buffer, SIZE_T bytesToWrite) {
+    if (!processStillAlive()) {
+        return -1;
+    }
+
+    WriteProcessMemory(processHandle, address, buffer, bytesToWrite, NULL);
+    return 0;
 }
 
 SIZE_T MemoryReader::findSubarray(byte *super, byte *sub, SIZE_T superSize, SIZE_T subSize) {
@@ -82,4 +95,16 @@ SIZE_T MemoryReader::findSubarray(byte *super, byte *sub, SIZE_T superSize, SIZE
         }
     }
     return SIZE_MAX;
+}
+
+int MemoryReader::processStillAlive() {
+    LPDWORD exitCode = new DWORD;
+    GetExitCodeProcess(processHandle, exitCode);
+    if (*exitCode != STILL_ACTIVE) {
+        printf("MSCC closed\n");
+        delete exitCode;
+        return 0;
+    }
+    delete exitCode;
+    return 1;
 }
